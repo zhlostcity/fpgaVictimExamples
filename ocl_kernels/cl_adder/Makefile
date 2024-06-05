@@ -36,7 +36,7 @@ help::
 ############################## Setting up Project Variables ##############################
 # Points to top directory of Git repository
 MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-COMMON_REPO ?= $(shell bash -c 'export MK_PATH=$(MK_PATH); echo $${MK_PATH%ocl_kernels/cl_helloworld/*}')
+COMMON_REPO ?= $(shell bash -c 'export MK_PATH=$(MK_PATH); echo $${MK_PATH%ocl_kernels/cl_adder/*}')
 PWD = $(shell readlink -f .)
 ABS_COMMON_REPO = $(shell readlink -f $(COMMON_REPO))
 
@@ -82,18 +82,19 @@ CLFLAGS += -t $(TARGET) --platform $(DEVICE) --save-temps
 ifneq ($(TARGET), hw)
 	CLFLAGS += -g
 endif
+CLFLAGS_adder +=  --config ./adder_adder.ini
 
 
 
-EXECUTABLE = ./cl_helloworld
-CMD_ARGS = $(BUILD_DIR)/vector_addition.xclbin
+EXECUTABLE = ./cl_adder
+CMD_ARGS = $(BUILD_DIR)/adder.xclbin
 EMCONFIG_DIR = $(TEMP_DIR)
 EMU_DIR = $(SDCARD)/data/emulation
 
 ############################## Declaring Binary Containers ##############################
-BINARY_CONTAINERS += $(BUILD_DIR)/vector_addition.xclbin
-BINARY_CONTAINER_vector_addition_OBJS += $(TEMP_DIR)/vector_add.xo
-BINARY_CONTAINER_vector_addition_OBJS += $(TEMP_DIR)/comm_kernel.xo
+BINARY_CONTAINERS += $(BUILD_DIR)/adder.xclbin
+BINARY_CONTAINER_adder_OBJS += $(TEMP_DIR)/adder.xo
+BINARY_CONTAINER_adder_OBJS += $(TEMP_DIR)/comm_kernel.xo
 
 ############################## Setting Targets ##############################
 CP = cp -rf
@@ -111,19 +112,19 @@ build: check-vitis $(BINARY_CONTAINERS)
 xclbin: build
 
 ############################## Setting Rules for Binary Containers (Building Kernels) ##############################
-$(TEMP_DIR)/vector_add.xo: src/vector_addition.cl
+$(TEMP_DIR)/adder.xo: src/adder.cl
 	mkdir -p $(TEMP_DIR)
-	$(VPP) -c -k vector_add $(CLFLAGS) --temp_dir $(TEMP_DIR)  -I'$(<D)' -o'$@' '$<'
-$(TEMP_DIR)/comm_kernel.xo: src/vector_addition.cl
+	$(VPP) -c -k adder $(CLFLAGS) $(CLFLAGS_adder) --temp_dir $(TEMP_DIR)  -I'$(<D)' -o'$@' '$<'
+$(TEMP_DIR)/comm_kernel.xo: src/adder.cl
 	mkdir -p $(TEMP_DIR)
-	$(VPP) -c -k comm_kernel $(CLFLAGS) --temp_dir $(TEMP_DIR)  -I'$(<D)' -o'$@' '$<'
-$(BUILD_DIR)/vector_addition.xclbin: $(BINARY_CONTAINER_vector_addition_OBJS)
+	$(VPP) -c -k comm_kernel $(CLFLAGS) $(CLFLAGS_adder) --temp_dir $(TEMP_DIR)  -I'$(<D)' -o'$@' '$<'
+$(BUILD_DIR)/adder.xclbin: $(BINARY_CONTAINER_adder_OBJS)
 	mkdir -p $(BUILD_DIR)
 ifeq ($(HOST_ARCH), x86)
-	$(VPP) -l $(LDCLFLAGS) $(CLFLAGS) --temp_dir $(BUILD_DIR)  -o'$(BUILD_DIR)/vector_addition.link.xclbin' $(+)
-	$(VPP) -p $(BUILD_DIR)/vector_addition.link.xclbin -t $(TARGET) --platform $(DEVICE) --package.out_dir $(PACKAGE_OUT) -o $(BUILD_DIR)/vector_addition.xclbin
+	$(VPP) -l $(LDCLFLAGS) $(CLFLAGS) --temp_dir $(BUILD_DIR)  -o'$(BUILD_DIR)/adder.link.xclbin' $(+)
+	$(VPP) -p $(BUILD_DIR)/adder.link.xclbin -t $(TARGET) --platform $(DEVICE) --package.out_dir $(PACKAGE_OUT) -o $(BUILD_DIR)/adder.xclbin
 else
-	$(VPP) -l $(LDCLFLAGS) $(CLFLAGS) --temp_dir $(BUILD_DIR) -o'$(BUILD_DIR)/vector_addition.xclbin' $(+)
+	$(VPP) -l $(LDCLFLAGS) $(CLFLAGS) --temp_dir $(BUILD_DIR) -o'$(BUILD_DIR)/adder.xclbin' $(+)
 endif
 
 ############################## Setting Rules for Host (Building Host Executable) ##############################
@@ -139,13 +140,13 @@ run: all
 ifeq ($(TARGET),$(filter $(TARGET),sw_emu hw_emu))
 ifeq ($(HOST_ARCH), x86)
 	$(CP) $(EMCONFIG_DIR)/emconfig.json .
-	XCL_EMULATION_MODE=$(TARGET) $(EXECUTABLE) $(BUILD_DIR)/vector_addition.xclbin
+	XCL_EMULATION_MODE=$(TARGET) $(EXECUTABLE) $(BUILD_DIR)/adder.xclbin
 else
 	$(ABS_COMMON_REPO)/common/utility/run_emulation.pl "${LAUNCH_EMULATOR} | tee run_app.log" "${RUN_APP_SCRIPT} $(TARGET)" "${RESULT_STRING}" "7"
 endif
 else
 ifeq ($(HOST_ARCH), x86)
-	$(EXECUTABLE) $(BUILD_DIR)/vector_addition.xclbin
+	$(EXECUTABLE) $(BUILD_DIR)/adder.xclbin
 endif
 endif
 
@@ -154,13 +155,13 @@ endif
 test: $(EXECUTABLE)
 ifeq ($(TARGET),$(filter $(TARGET),sw_emu hw_emu))
 ifeq ($(HOST_ARCH), x86)
-	XCL_EMULATION_MODE=$(TARGET) $(EXECUTABLE) $(BUILD_DIR)/vector_addition.xclbin
+	XCL_EMULATION_MODE=$(TARGET) $(EXECUTABLE) $(BUILD_DIR)/adder.xclbin
 else
 	$(ABS_COMMON_REPO)/common/utility/run_emulation.pl "${LAUNCH_EMULATOR} | tee embedded_run.log" "${RUN_APP_SCRIPT} $(TARGET)" "${RESULT_STRING}" "7"
 endif
 else
 ifeq ($(HOST_ARCH), x86)
-	$(EXECUTABLE) $(BUILD_DIR)/vector_addition.xclbin
+	$(EXECUTABLE) $(BUILD_DIR)/adder.xclbin
 else
 	$(ECHO) "Please copy the content of sd_card folder and data to an SD Card and run on the board"
 endif
@@ -170,7 +171,7 @@ endif
 ############################## Preparing sdcard ##############################
 sd_card: $(BINARY_CONTAINERS) $(EXECUTABLE) gen_run_app
 ifneq ($(HOST_ARCH), x86)
-	$(VPP) -p $(BUILD_DIR)/vector_addition.xclbin -t $(TARGET) --platform $(DEVICE) --package.out_dir $(PACKAGE_OUT) --package.rootfs $(EDGE_COMMON_SW)/rootfs.ext4 --package.sd_file $(SD_IMAGE_FILE) --package.sd_file xrt.ini --package.sd_file $(RUN_APP_SCRIPT) --package.sd_file $(EXECUTABLE) -o vector_addition.xclbin
+	$(VPP) -p $(BUILD_DIR)/adder.xclbin -t $(TARGET) --platform $(DEVICE) --package.out_dir $(PACKAGE_OUT) --package.rootfs $(EDGE_COMMON_SW)/rootfs.ext4 --package.sd_file $(SD_IMAGE_FILE) --package.sd_file xrt.ini --package.sd_file $(RUN_APP_SCRIPT) --package.sd_file $(EXECUTABLE) -o adder.xclbin
 endif
 
 ############################## Cleaning Rules ##############################

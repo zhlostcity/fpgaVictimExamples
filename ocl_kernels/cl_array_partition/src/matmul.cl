@@ -4,33 +4,33 @@
 // Tripcount identifiers
 __constant int c_size = MAX_SIZE;
 
-// __kernel void comm_kernel(__global int4 *dst, int NUM_ACCESS) {
-//     int id = get_global_id(0);
-//     for(long i = 0; i < NUM_ACCESS; i ++) {
-//         dst[id] = (int)dst ^ dst[id];
-//     }
-// }
-
 __kernel void comm_kernel(__global int4 *dst, int NUM_ACCESS) {
     int id = get_global_id(0);
-    int4 local_value = dst[id];
-    float4 sin_input;
-
-    // 进行sin操作
     for(long i = 0; i < NUM_ACCESS; i ++) {
-        // 将int4转换为float4以便进行sin操作
-        sin_input = convert_float4(local_value);
-        
-        // 计算正弦值
-        sin_input = sin(sin_input);
-        
-        // 将计算结果转换回int4
-        local_value = convert_int4(sin_input);
-        
-        // 更新内存中的值
-        dst[id] = local_value;
+        dst[id] = (int)dst ^ dst[id];
     }
 }
+
+// __kernel void comm_kernel(__global int4 *dst, int NUM_ACCESS) {
+//     int id = get_global_id(0);
+//     int4 local_value = dst[id];
+//     float4 sin_input;
+
+//     // 进行sin操作
+//     for(long i = 0; i < NUM_ACCESS; i ++) {
+//         // 将int4转换为float4以便进行sin操作
+//         sin_input = convert_float4(local_value);
+        
+//         // 计算正弦值
+//         sin_input = sin(sin_input);
+        
+//         // 将计算结果转换回int4
+//         local_value = convert_int4(sin_input);
+        
+//         // 更新内存中的值
+//         dst[id] = local_value;
+//     }
+// }
 
 // Naive implementation of matrix multiplication 
 // In this implementation array partition is not done
@@ -49,7 +49,7 @@ void matmul(const __global int *in1,  // Read-Only Matrix 1
 
     // Burst reads on input matrices from global memory
     // Burst read for matrix A
-    while(true){
+    for(int i = 0; i <= 200; i++){
     __attribute__((xcl_pipeline_loop(1)))
     __attribute__((xcl_loop_tripcount(c_size*c_size, c_size*c_size)))
     readA:
