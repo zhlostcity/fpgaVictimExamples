@@ -36,7 +36,7 @@ help::
 ############################## Setting up Project Variables ##############################
 # Points to top directory of Git repository
 MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-COMMON_REPO ?= $(shell bash -c 'export MK_PATH=$(MK_PATH); echo $${MK_PATH%ocl_kernels/cl_apply/*}')
+COMMON_REPO ?= $(shell bash -c 'export MK_PATH=$(MK_PATH); echo $${MK_PATH%ocl_kernels/cl_gmem_2banks/*}')
 PWD = $(shell readlink -f .)
 ABS_COMMON_REPO = $(shell readlink -f $(COMMON_REPO))
 
@@ -92,7 +92,7 @@ CLFLAGS_apply_watermark +=  --config ./bandwidth.ini
 
 # Adding config files to linker
 LDCLFLAGS_apply_watermark += --config apply_watermark.ini 
-EXECUTABLE = ./cl_apply
+EXECUTABLE = ./cl_gmem_2banks
 CMD_ARGS = -x $(BUILD_DIR)/apply_watermark.xclbin -i ./data/input.bmp -c ./data/golden.bmp
 EMCONFIG_DIR = $(TEMP_DIR)
 EMU_DIR = $(SDCARD)/data/emulation

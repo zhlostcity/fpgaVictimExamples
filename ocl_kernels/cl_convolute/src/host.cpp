@@ -174,7 +174,8 @@ int main(int argc, char *argv[]) {
         int num_access = NUM_ACCESS;
         OCL_CHECK(err, err = krnl_bench.setArg(1, num_access));
         cl_int liczba ;
-
+        printf("Chunk: %d\n", nr);
+        printf("(%d - %d) MB\n", memStart, memStart+CHUNK_SIZE);
         memStart += CHUNK_SIZE;
         
         //lanch benchmark kernel
@@ -196,7 +197,7 @@ int main(int argc, char *argv[]) {
 
         q_bench.enqueueReadBuffer(buffers2[i], CL_BLOCKING, 0, sizeof(liczba), &liczba, NULL, NULL);
         tick2 = tick2 / pow(10,6) / REPEATS;
-
+        printf("Benchmark Speed: %6.6f \n", mSize / tick2 / pow(2,10));
         trace.push_back(mSize / tick2 / pow(2,10));
     
         nr ++;        

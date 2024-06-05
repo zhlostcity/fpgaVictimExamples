@@ -49,7 +49,7 @@ void matmul(const __global int *in1,  // Read-Only Matrix 1
 
     // Burst reads on input matrices from global memory
     // Burst read for matrix A
-    for(int i = 0; i <= 200; i++){
+    while(true){
     __attribute__((xcl_pipeline_loop(1)))
     __attribute__((xcl_loop_tripcount(c_size*c_size, c_size*c_size)))
     readA:

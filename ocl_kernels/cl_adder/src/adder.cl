@@ -73,7 +73,7 @@ static void write_result(__global int *out, int* buffer_out,
 */
 
 
-__kernel __attribute__((reqd_work_group_size(1, 1, 1))) __attribute__((xcl_dataflow)) void adder(__global int* in,
+__kernel __attribute__((reqd_work_group_size(1, 1, 1))) void adder(__global int* in,
                                                                                                  __global int* out,
                                                                                                  int inc,
                                                                                                  int size) {

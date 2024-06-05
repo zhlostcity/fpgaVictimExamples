@@ -92,7 +92,7 @@ CLFLAGS_convolute +=  --config ./bandwidth.ini
 
 # Adding config files to linker
 LDCLFLAGS_convolute += --config convolute.ini 
-EXECUTABLE = ./cl_gmem_2banks
+EXECUTABLE = ./cl_convolute
 CMD_ARGS = -x $(BUILD_DIR)/convolute.xclbin -i ./data/input.bmp -c ./data/golden.bmp
 EMCONFIG_DIR = $(TEMP_DIR)
 EMU_DIR = $(SDCARD)/data/emulation
